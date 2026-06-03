@@ -1035,694 +1035,152 @@
     const activeCount = document.getElementById("activeCount");
     const completedCount = document.getElementById("completedCount");
 
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    let currentTab = "active";
-    let currentCategory = "all";
-    let editingTaskId = null;
 
-    function applyTheme(theme) {
-      document.body.classList.remove(
-        "theme-dark",
-        "theme-gradient-berries",
-        "theme-gradient-sunset",
-        "theme-gradient-ocean",
-        "theme-gradient-forest"
-      );
 
-      if (theme !== "light") {
-        document.body.classList.add("theme-" + theme);
-      }
+    const LOG_LEVELS = {
+      INFO: 1,
+      DEBUG: 2,
+      ERROR: 3
+    };
 
-      localStorage.setItem("siteTheme", theme);
-    }
+    let currentLogLevel = "INFO";
 
-    function loadTheme() {
-      const savedTheme = localStorage.getItem("siteTheme") || "light";
-      themeSelect.value = savedTheme;
-      applyTheme(savedTheme);
-    }
+    function log(level = "INFO") {
+      return function(fn) {
+        return function(...args) {
+          const startedAt = performance.now();
+          const functionName = fn.name || "anonymous";
 
-    function saveTasks() {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
-    }
-
-    function shortenText(text, maxLength = 15) {
-      if (!text) return "";
-
-      return text.length > maxLength
-        ? text.slice(0, maxLength) + "..."
-        : text;
-    }
-
-    function formatDate(date) {
-      if (!date) return "не вказано";
-
-      return new Date(date).toLocaleDateString("uk-UA", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-
-    function getDeadlineInfo(deadline) {
-      if (!deadline) {
-        return {
-          className: "safe",
-          level: "no-deadline",
-          text: "Дедлайн не встановлено"
-        };
-      }
-
-      const now = new Date();
-      const deadlineDate = new Date(deadline);
-      const difference = deadlineDate - now;
-      const oneDay = 24 * 60 * 60 * 1000;
-      const oneWeek = 7 * oneDay;
-      const twoWeeks = 14 * oneDay;
-
-      if (difference < 0) {
-        return {
-          className: "overdue",
-          level: "overdue",
-          text: "Термін виконання минув"
-        };
-      }
-
-      if (difference <= oneDay) {
-        const hours = Math.ceil(difference / (60 * 60 * 1000));
-        return {
-          className: "overdue",
-          level: "one-day",
-          text: `Залишився 1 день або менше (${hours} год.)`
-        };
-      }
-
-      if (difference <= oneWeek) {
-        const days = Math.ceil(difference / oneDay);
-        return {
-          className: "warning",
-          level: "one-week",
-          text: `Залишився тиждень або менше (${days} дн.)`
-        };
-      }
-
-      if (difference <= twoWeeks) {
-        const days = Math.ceil(difference / oneDay);
-        return {
-          className: "safe",
-          level: "two-weeks",
-          text: `До дедлайну залишилось менше 2 тижнів (${days} дн.)`
-        };
-      }
-
-      const days = Math.ceil(difference / oneDay);
-      return {
-        className: "safe",
-        level: "more-than-two-weeks",
-        text: `Часу достатньо (${days} дн.)`
-      };
-    }
-
-    function showToast(title, message) {
-      const toast = document.createElement("div");
-      toast.className = "toast";
-      toast.innerHTML = `
-        <div class="toast-title">${title}</div>
-        <div>${message}</div>
-      `;
-
-      toastContainer.appendChild(toast);
-
-      setTimeout(function() {
-        toast.remove();
-      }, 5000);
-    }
-
-    function getDeadlineNotificationText(level) {
-      if (level === "two-weeks") return "До кінця залишилося менше двох тижнів";
-      if (level === "one-week") return "До кінця залишився тиждень або менше";
-      if (level === "one-day") return "До кінця залишився один день або менше";
-      if (level === "overdue") return "Термін виконання завдання минув";
-      return null;
-    }
-
-    function checkDeadlineNotifications() {
-      let changed = false;
-
-      tasks = tasks.map(function(task) {
-        if (task.completed || !task.deadline) {
-          return task;
-        }
-
-        const deadlineInfo = getDeadlineInfo(task.deadline);
-
-        if (task.lastDeadlineLevel === undefined) {
-          changed = true;
-          return {
-            ...task,
-            lastDeadlineLevel: deadlineInfo.level
-          };
-        }
-
-        if (task.lastDeadlineLevel !== deadlineInfo.level) {
-          const message = getDeadlineNotificationText(deadlineInfo.level);
-
-          if (message) {
-            showToast(task.text, message);
+          if (LOG_LEVELS[level] >= LOG_LEVELS[currentLogLevel]) {
+            console.log(`[${new Date().toISOString()}] [${level}] Виклик: ${functionName}`, args);
           }
 
-          changed = true;
-          return {
-            ...task,
-            lastDeadlineLevel: deadlineInfo.level
-          };
-        }
+          try {
+            const result = fn.apply(this, args);
 
-        return task;
-      });
+            if (result instanceof Promise) {
+              return result
+                .then(function(value) {
+                  console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, value);
+                  console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+                  return value;
+                })
+                .catch(function(error) {
+                  console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+                  throw error;
+                });
+            }
 
-      if (changed) {
-        saveTasks();
-      }
-    }
-
-    function getPriorityWeight(priority) {
-      if (priority === "Дуже важлива") return 3;
-      if (priority === "Важлива") return 2;
-      return 1;
-    }
-
-    function getPriorityClass(priority) {
-      if (priority === "Дуже важлива") return "priority-high";
-      if (priority === "Важлива") return "priority-important";
-      return "priority-normal";
-    }
-
-    function getPriorityPreview(priority) {
-      if (priority === "Дуже важлива") {
-        return {
-          dotClass: "priority-dot high",
-          text: "Червоний — дуже важливе завдання"
+            console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, result);
+            console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+            return result;
+          } catch (error) {
+            console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+            throw error;
+          }
         };
-      }
-
-      if (priority === "Важлива") {
-        return {
-          dotClass: "priority-dot important",
-          text: "Жовтий — важливе завдання"
-        };
-      }
-
-      return {
-        dotClass: "priority-dot normal",
-        text: "Зелений — звичайна важливість"
       };
     }
 
-    function updatePriorityPreview() {
-      const preview = getPriorityPreview(priorityInput.value);
-      priorityPreviewDot.className = preview.dotClass;
-      priorityPreviewText.textContent = preview.text;
-    }
 
-    function getDeadlineTime(deadline) {
-      if (!deadline) return Number.MAX_SAFE_INTEGER;
-      return new Date(deadline).getTime();
-    }
 
-    function sortTasksByPriorityAndDeadline(taskArray) {
-      return [...taskArray].sort(function(a, b) {
-        const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
+    class EventEmitter {
+      constructor() {
+        this.events = {};
+      }
 
-        if (priorityDifference !== 0) {
-          return priorityDifference;
+      on(eventName, listener) {
+        if (!this.events[eventName]) {
+          this.events[eventName] = [];
         }
 
-        return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
-      });
+        this.events[eventName].push(listener);
+      }
+
+      emit(eventName, payload) {
+        const listeners = this.events[eventName] || [];
+        listeners.forEach(function(listener) {
+          listener(payload);
+        });
+      }
     }
 
-    function taskMatchesFilters(task) {
-      const selectedPriority = priorityFilter.value;
-      const selectedDeadline = deadlineFilter.value;
-      const deadlineLevel = getDeadlineInfo(task.deadline).level;
-      const taskCategory = task.category || "Побут";
+    const appEvents = new EventEmitter();
 
-      if (currentCategory !== "all" && taskCategory !== currentCategory) {
-        return false;
+
+
+    function* taskIdGenerator(start = Date.now()) {
+      let currentId = start;
+
+      while (true) {
+        yield currentId++;
       }
-
-      if (selectedPriority !== "all" && (task.priority || "Звичайна") !== selectedPriority) {
-        return false;
-      }
-
-      if (selectedDeadline !== "all" && deadlineLevel !== selectedDeadline) {
-        return false;
-      }
-
-      return true;
     }
 
-    function updateStats() {
-      const activeTasks = tasks.filter(function(task) {
-        return !task.completed;
-      });
+    const idIterator = taskIdGenerator(Date.now());
 
-      const completedTasks = tasks.filter(function(task) {
-        return task.completed;
-      });
-
-      totalCount.textContent = tasks.length;
-      activeCount.textContent = activeTasks.length;
-      completedCount.textContent = completedTasks.length;
+    function getNextTaskId() {
+      return idIterator.next().value;
     }
 
-    function renderTasks() {
-      taskList.innerHTML = "";
 
-      const filteredTasks = sortTasksByPriorityAndDeadline(
-        tasks.filter(function(task) {
-          const tabMatches = currentTab === "active" ? !task.completed : task.completed;
-          return tabMatches && taskMatchesFilters(task);
-        })
-      );
 
-      if (filteredTasks.length === 0) {
-        const emptyMessage = document.createElement("li");
-        emptyMessage.className = "empty";
-        emptyMessage.textContent = currentTab === "active"
-          ? "Активних завдань за цим фільтром немає"
-          : "В історії немає завдань за цим фільтром";
-        taskList.appendChild(emptyMessage);
-      }
+    function memoize(fn, options = {}) {
+      const cache = new Map();
+      const maxSize = options.maxSize || Infinity;
+      const ttl = options.ttl || Infinity;
 
-      filteredTasks.forEach(function(task) {
-        const deadlineInfo = getDeadlineInfo(task.deadline);
+      return function(...args) {
+        const key = JSON.stringify(args);
+        const cached = cache.get(key);
+        const now = Date.now();
 
-        const li = document.createElement("li");
-        li.className = task.completed ? "task completed" : "task " + deadlineInfo.className;
-
-        const priorityCorner = document.createElement("span");
-        priorityCorner.className = "priority-corner " + getPriorityClass(task.priority || "Звичайна");
-        priorityCorner.title = "Важливість: " + (task.priority || "Звичайна");
-
-        const taskInfo = document.createElement("div");
-        taskInfo.className = "task-info";
-
-        const title = document.createElement("div");
-        title.className = "task-title";
-        title.textContent = task.text;
-
-        const date = document.createElement("div");
-        date.className = "task-date";
-
-        if (task.completed) {
-          date.textContent = "Створено: " + formatDate(task.createdAt) + " | Виконано: " + formatDate(task.completedAt);
-        } else {
-          date.textContent = "Створено: " + formatDate(task.createdAt);
+        if (cached && now - cached.createdAt < ttl) {
+          cached.usedAt = now;
+          cached.hits++;
+          return cached.value;
         }
 
-        const deadline = document.createElement("div");
-        deadline.className = "task-deadline";
-        deadline.textContent = "Дедлайн: " + formatDate(task.deadline);
+        const value = fn.apply(this, args);
 
-        const category = document.createElement("div");
-        category.className = "task-category";
-        category.textContent = task.category || "Побут";
-
-        const priority = document.createElement("div");
-        priority.className = "task-priority";
-        priority.innerHTML = "<strong>Важливість:</strong> " + (task.priority || "Звичайна");
-
-        const description = document.createElement("div");
-        description.className = "task-description-preview";
-        description.textContent = task.description ? "Опис: " + shortenText(task.description, 15) : "";
-
-        const status = document.createElement("div");
-        status.className = "task-status";
-        status.innerHTML = "<strong>Стан:</strong> " + (task.completed ? "Завдання виконано:" : deadlineInfo.text);
-
-        const openHint = document.createElement("div");
-        openHint.className = "open-hint";
-        openHint.textContent = "Натисніть на завдання, щоб переглянути всю інформацію";
-
-        taskInfo.appendChild(title);
-        taskInfo.appendChild(date);
-        taskInfo.appendChild(deadline);
-        taskInfo.appendChild(category);
-        taskInfo.appendChild(priority);
-        if (task.description) taskInfo.appendChild(description);
-        taskInfo.appendChild(status);
-        taskInfo.appendChild(openHint);
-
-        const actions = document.createElement("div");
-        actions.className = "task-actions";
-        actions.onclick = function(event) {
-          event.stopPropagation();
-        };
-
-        if (!task.completed) {
-          const completeBtn = document.createElement("button");
-          completeBtn.className = "complete-btn";
-          completeBtn.textContent = "Виконано";
-          completeBtn.onclick = function() {
-            completeTask(task.id);
-          };
-          actions.appendChild(completeBtn);
-
-          const editBtn = document.createElement("button");
-          editBtn.className = "edit-btn";
-          editBtn.textContent = "Редагувати";
-          editBtn.onclick = function() {
-            startEditTask(task.id);
-          };
-          actions.appendChild(editBtn);
-        } else {
-          const restoreBtn = document.createElement("button");
-          restoreBtn.className = "restore-btn";
-          restoreBtn.textContent = "Повернути";
-          restoreBtn.onclick = function() {
-            restoreTask(task.id);
-          };
-          actions.appendChild(restoreBtn);
-        }
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "delete-btn";
-        deleteBtn.textContent = "Видалити";
-        deleteBtn.onclick = function() {
-          deleteTask(task.id);
-        };
-        actions.appendChild(deleteBtn);
-
-        li.onclick = function() {
-          openDetailsModal(task.id);
-        };
-
-        li.appendChild(priorityCorner);
-        li.appendChild(taskInfo);
-        li.appendChild(actions);
-        taskList.appendChild(li);
-      });
-
-      clearHistoryBtn.classList.toggle(
-        "visible",
-        currentTab === "history" && tasks.some(function(task) {
-          return task.completed;
-        })
-      );
-
-      updateStats();
-    }
-
-    function openDetailsModal(id) {
-      const task = tasks.find(function(item) {
-        return item.id === id;
-      });
-
-      if (!task) return;
-
-      const deadlineInfo = getDeadlineInfo(task.deadline);
-      detailsTitle.textContent = task.text;
-      detailsContent.innerHTML = `
-        <div class="details-item"><strong>Назва:</strong> ${task.text}</div>
-        <div class="details-item"><strong>Створено:</strong> ${formatDate(task.createdAt)}</div>
-        <div class="details-item"><strong>Дедлайн:</strong> ${formatDate(task.deadline)}</div>
-        <div class="details-item"><strong>Категорія:</strong> ${task.category || "Побут"}</div>
-        <div class="details-item"><strong>Важливість:</strong> ${task.priority || "Звичайна"}</div>
-        <div class="details-item"><strong>Стан:</strong> ${task.completed ? "Завдання виконано:" : deadlineInfo.text}</div>
-        <div class="details-item"><strong>Виконано:</strong> ${task.completedAt ? formatDate(task.completedAt) : "ще не виконано"}</div>
-        <div class="details-item details-description"><strong>Опис:</strong> ${task.description || "опис не додано"}</div>
-      `;
-
-      detailsModal.classList.add("visible");
-    }
-
-    function closeDetailsModal() {
-      detailsModal.classList.remove("visible");
-      detailsContent.innerHTML = "";
-    }
-
-    function openModal(mode) {
-      taskModal.classList.add("visible");
-      modalTitle.textContent = mode === "edit" ? "Редагування завдання" : "Нове завдання";
-      submitBtn.textContent = mode === "edit" ? "Зберегти" : "Додати";
-      setTimeout(function() {
-        taskInput.focus();
-      }, 100);
-    }
-
-    function closeModal() {
-      taskModal.classList.remove("visible");
-      resetForm();
-    }
-
-    function resetForm() {
-      editingTaskId = null;
-      taskInput.value = "";
-      deadlineInput.value = "";
-      priorityInput.value = "Звичайна";
-      updatePriorityPreview();
-      categoryInput.value = "Побут";
-      descriptionInput.value = "";
-      modalTitle.textContent = "Нове завдання";
-      submitBtn.textContent = "Додати";
-    }
-
-    function addTask(text, deadline, priority, category, description) {
-      const newTask = {
-        id: Date.now(),
-        text: text,
-        completed: false,
-        createdAt: new Date().toISOString(),
-        deadline: deadline || null,
-        priority: priority || "Звичайна",
-        category: category || "Побут",
-        description: description || "",
-        lastDeadlineLevel: deadline ? getDeadlineInfo(deadline).level : "no-deadline",
-        completedAt: null
-      };
-
-      tasks.push(newTask);
-      saveTasks();
-      renderTasks();
-      showToast("Завдання створено", text);
-    }
-
-    function updateTask(id, text, deadline, priority, category, description) {
-      tasks = tasks.map(function(task) {
-        if (task.id === id) {
-          return {
-            ...task,
-            text: text,
-            deadline: deadline || null,
-            priority: priority || "Звичайна",
-            category: category || "Побут",
-            description: description || "",
-            lastDeadlineLevel: deadline ? getDeadlineInfo(deadline).level : "no-deadline"
-          };
-        }
-        return task;
-      });
-
-      saveTasks();
-      renderTasks();
-      showToast("Завдання оновлено", text);
-    }
-
-    function completeTask(id) {
-      tasks = tasks.map(function(task) {
-        if (task.id === id) {
-          return {
-            ...task,
-            completed: true,
-            completedAt: new Date().toISOString()
-          };
-        }
-        return task;
-      });
-
-      saveTasks();
-      renderTasks();
-    }
-
-    function restoreTask(id) {
-      tasks = tasks.map(function(task) {
-        if (task.id === id) {
-          return {
-            ...task,
-            completed: false,
-            completedAt: null,
-            lastDeadlineLevel: task.deadline ? getDeadlineInfo(task.deadline).level : "no-deadline"
-          };
-        }
-        return task;
-      });
-
-      saveTasks();
-      renderTasks();
-    }
-
-    function startEditTask(id) {
-      const task = tasks.find(function(item) {
-        return item.id === id;
-      });
-
-      if (!task) return;
-
-      editingTaskId = id;
-      taskInput.value = task.text;
-      deadlineInput.value = task.deadline ? task.deadline.slice(0, 16) : "";
-      priorityInput.value = task.priority || "Звичайна";
-      updatePriorityPreview();
-      categoryInput.value = task.category || "Побут";
-      descriptionInput.value = task.description || "";
-      openModal("edit");
-    }
-
-    function deleteTask(id) {
-      tasks = tasks.filter(function(task) {
-        return task.id !== id;
-      });
-
-      saveTasks();
-      renderTasks();
-    }
-
-    function clearHistory() {
-      tasks = tasks.filter(function(task) {
-        return !task.completed;
-      });
-
-      saveTasks();
-      renderTasks();
-    }
-
-    openCreateModalBtn.onclick = function() {
-      resetForm();
-      openModal("create");
-    };
-
-    priorityInput.addEventListener("change", updatePriorityPreview);
-
-    taskForm.addEventListener("submit", function(event) {
-      event.preventDefault();
-
-      const text = taskInput.value.trim();
-      const deadline = deadlineInput.value;
-      const priority = priorityInput.value;
-      const category = categoryInput.value;
-      const description = descriptionInput.value.trim();
-
-      if (text === "") {
-        alert("Будь ласка, введіть текст завдання:");
-        return;
-      }
-
-      if (editingTaskId === null) {
-        addTask(text, deadline, priority, category, description);
-      } else {
-        updateTask(editingTaskId, text, deadline, priority, category, description);
-      }
-
-      closeModal();
-    });
-
-    cancelEditBtn.onclick = function() {
-      closeModal();
-    };
-
-    taskModal.addEventListener("click", function(event) {
-      if (event.target === taskModal) {
-        closeModal();
-      }
-    });
-
-    detailsModal.addEventListener("click", function(event) {
-      if (event.target === detailsModal) {
-        closeDetailsModal();
-      }
-    });
-
-    filterModal.addEventListener("click", function(event) {
-      if (event.target === filterModal) {
-        filterModal.classList.remove("visible");
-      }
-    });
-
-    closeDetailsBtn.onclick = function() {
-      closeDetailsModal();
-    };
-
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Escape" && taskModal.classList.contains("visible")) {
-        closeModal();
-      }
-    });
-
-    activeTab.addEventListener("click", function() {
-      currentTab = "active";
-      activeTab.classList.add("active");
-      historyTab.classList.remove("active");
-      clearHistoryBtn.classList.remove("visible");
-      renderTasks();
-    });
-
-    historyTab.addEventListener("click", function() {
-      currentTab = "history";
-      historyTab.classList.add("active");
-      activeTab.classList.remove("active");
-      renderTasks();
-    });
-
-    categoryButtons.forEach(function(button) {
-      button.addEventListener("click", function() {
-        currentCategory = button.dataset.category;
-
-        categoryButtons.forEach(function(item) {
-          item.classList.remove("active");
+        cache.set(key, {
+          value: value,
+          createdAt: now,
+          usedAt: now,
+          hits: 1
         });
 
-        button.classList.add("active");
-        renderTasks();
-      });
+        if (cache.size > maxSize) {
+          const evictionStrategy = options.strategy || "LRU";
+          let keyToDelete = cache.keys().next().value;
+
+          if (evictionStrategy === "LFU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].hits - b[1].hits;
+            })[0][0];
+          }
+
+          if (evictionStrategy === "LRU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].usedAt - b[1].usedAt;
+            })[0][0];
+          }
+
+          if (typeof options.customEviction === "function") {
+            keyToDelete = options.customEviction(cache);
+          }
+
+          cache.delete(keyToDelete);
+        }
+
+        return value;
+      };
+    }
+
+    const memoizedGetDeadlineInfo = memoize(function(deadline) {
+      return calculateDeadlineInfo(deadline);
+    }, {
+      maxSize: 100,
+      ttl: 60 * 1000,
+      strategy: "LRU"
     });
-
-    themeSelect.addEventListener("change", function() {
-      applyTheme(themeSelect.value);
-    });
-
-    clearHistoryBtn.onclick = function() {
-      clearHistory();
-    };
-
-    openFilterBtn.onclick = function() {
-      filterModal.classList.add("visible");
-    };
-
-    applyFilterBtn.onclick = function() {
-      filterModal.classList.remove("visible");
-      renderTasks();
-    };
-
-    resetFilterBtn.onclick = function() {
-      priorityFilter.value = "all";
-      deadlineFilter.value = "all";
-      filterModal.classList.remove("visible");
-      renderTasks();
-    };
-
-    loadTheme();
-    updatePriorityPreview();
-    checkDeadlineNotifications();
-    renderTasks();
-
-    setInterval(function() {
-      checkDeadlineNotifications();
-      renderTasks();
-    }, 60000);
-  </script>
-</body>
-</html>
