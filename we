@@ -1081,7 +1081,6 @@
       };
     }
 
-  
     class EventEmitter {
       constructor() {
         this.events = {};
@@ -1105,7 +1104,6 @@
 
     const appEvents = new EventEmitter();
 
-  
     function* taskIdGenerator(start = Date.now()) {
       let currentId = start;
 
@@ -1204,7 +1202,7 @@
       }
     }
 
-   function asyncMapCallback(array, asyncCallback, finalCallback) {
+    function asyncMapCallback(array, asyncCallback, finalCallback) {
       const result = [];
       let completed = 0;
       let finished = false;
@@ -1278,7 +1276,49 @@
 
     const loggedGetTaskAnalytics = log("DEBUG")(getTaskAnalytics);
 
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const apiAuthState = {
+      token: "coursework-demo-token"
+    };
+
+    const localTaskApi = {
+      readTasks() {
+        return JSON.parse(localStorage.getItem("tasks")) || [];
+      },
+
+      saveTasks(taskArray) {
+        localStorage.setItem("tasks", JSON.stringify(taskArray));
+        return true;
+      },
+
+      readTheme() {
+        return localStorage.getItem("siteTheme") || "light";
+      },
+
+      saveTheme(theme) {
+        taskApi.saveTheme(theme);
+        return true;
+      }
+    };
+
+    const taskApi = new Proxy(localTaskApi, {
+      get(target, property) {
+        const originalValue = target[property];
+
+        if (typeof originalValue !== "function") {
+          return originalValue;
+        }
+
+        return function(...args) {
+          if (!apiAuthState.token) {
+            throw new Error("Доступ заборонено: немає токена авторизації");
+          }
+
+          return originalValue.apply(target, args);
+        };
+      }
+    });
+
+    let tasks = taskApi.readTasks();
     let currentTab = "active";
     let currentCategory = "all";
     let editingTaskId = null;
@@ -1296,17 +1336,18 @@
         document.body.classList.add("theme-" + theme);
       }
 
-      localStorage.setItem("siteTheme", theme);
+      taskApi.saveTheme(theme);
     }
 
     function loadTheme() {
-      const savedTheme = localStorage.getItem("siteTheme") || "light";
+      const savedTheme = taskApi.readTheme();
       themeSelect.value = savedTheme;
       applyTheme(savedTheme);
     }
 
     function saveTasks() {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
+      taskApi.saveTasks(tasks);
+      appEvents.emit("tasks:saved", tasks);
     }
 
     function shortenText(text, maxLength = 15) {
@@ -1329,7 +1370,7 @@
       });
     }
 
-    function getDeadlineInfo(deadline) {
+    function calculateDeadlineInfo(deadline) {
       if (!deadline) {
         return {
           className: "safe",
@@ -1386,6 +1427,10 @@
         level: "more-than-two-weeks",
         text: `Часу достатньо (${days} дн.)`
       };
+    }
+
+    function getDeadlineInfo(deadline) {
+      return memoizedGetDeadlineInfo(deadline);
     }
 
     function showToast(title, message) {
@@ -1495,16 +1540,37 @@
       return new Date(deadline).getTime();
     }
 
-    function sortTasksByPriorityAndDeadline(taskArray) {
-      return [...taskArray].sort(function(a, b) {
-        const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
+    function compareTasksByPriorityAndDeadline(a, b) {
+      const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
 
-        if (priorityDifference !== 0) {
-          return priorityDifference;
-        }
+      if (priorityDifference !== 0) {
+        return priorityDifference;
+      }
 
-        return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
+      return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
+    }
+
+    function buildPriorityQueue(taskArray) {
+      const priorityQueue = new BiDirectionalPriorityQueue(compareTasksByPriorityAndDeadline);
+
+      taskArray.forEach(function(task) {
+        priorityQueue.insert(task);
       });
+
+      return priorityQueue;
+    }
+
+    function getPriorityExtremes(taskArray) {
+      const priorityQueue = buildPriorityQueue(taskArray);
+
+      return {
+        highest: priorityQueue.popHighest() || null,
+        lowest: priorityQueue.popLowest() || null
+      };
+    }
+
+    function sortTasksByPriorityAndDeadline(taskArray) {
+      return buildPriorityQueue(taskArray).toSortedArray();
     }
 
     function taskMatchesFilters(task) {
@@ -1529,17 +1595,36 @@
     }
 
     function updateStats() {
-      const activeTasks = tasks.filter(function(task) {
+      asyncFilter(tasks, async function(task) {
         return !task.completed;
+      }).then(function(activeTasks) {
+        activeCount.textContent = activeTasks.length;
       });
 
-      const completedTasks = tasks.filter(function(task) {
+      asyncMapPromise(tasks, async function(task) {
         return task.completed;
+      }).then(function(completedChecks) {
+        completedCount.textContent = completedChecks.filter(Boolean).length;
       });
 
-      totalCount.textContent = tasks.length;
-      activeCount.textContent = activeTasks.length;
-      completedCount.textContent = completedTasks.length;
+      asyncMapCallback(
+        tasks,
+        function(task, index, callback) {
+          setTimeout(function() {
+            callback(null, task);
+          }, 0);
+        },
+        function(error, mappedTasks) {
+          if (!error) {
+            totalCount.textContent = mappedTasks.length;
+          }
+        }
+      );
+
+      loggedGetTaskAnalytics(tasks).then(function(analytics) {
+        analytics.priorityExtremes = getPriorityExtremes(tasks);
+        appEvents.emit("analytics:updated", analytics);
+      });
     }
 
     function renderTasks() {
@@ -1736,7 +1821,7 @@
 
     function addTask(text, deadline, priority, category, description) {
       const newTask = {
-        id: Date.now(),
+        id: getNextTaskId(),
         text: text,
         completed: false,
         createdAt: new Date().toISOString(),
@@ -1752,6 +1837,7 @@
       saveTasks();
       renderTasks();
       showToast("Завдання створено", text);
+      appEvents.emit("task:created", newTask);
     }
 
     function updateTask(id, text, deadline, priority, category, description) {
@@ -1773,6 +1859,7 @@
       saveTasks();
       renderTasks();
       showToast("Завдання оновлено", text);
+      appEvents.emit("task:updated", { id: id, text: text });
     }
 
     function completeTask(id) {
@@ -1789,6 +1876,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:completed", id);
     }
 
     function restoreTask(id) {
@@ -1806,6 +1894,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:restored", id);
     }
 
     function startEditTask(id) {
@@ -1832,6 +1921,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:deleted", id);
     }
 
     function clearHistory() {
@@ -1956,6 +2046,30 @@
       filterModal.classList.remove("visible");
       renderTasks();
     };
+
+    appEvents.on("task:created", function(task) {
+      console.log("EventEmitter: створено завдання", task.text);
+    });
+
+    appEvents.on("task:updated", function(task) {
+      console.log("EventEmitter: оновлено завдання", task.text);
+    });
+
+    appEvents.on("task:completed", function(id) {
+      console.log("EventEmitter: виконано завдання", id);
+    });
+
+    appEvents.on("task:restored", function(id) {
+      console.log("EventEmitter: завдання повернуто", id);
+    });
+
+    appEvents.on("task:deleted", function(id) {
+      console.log("EventEmitter: завдання видалено", id);
+    });
+
+    appEvents.on("analytics:updated", function(analytics) {
+      console.log("Async Iterator analytics:", analytics);
+    });
 
     loadTheme();
     updatePriorityPreview();
