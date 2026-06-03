@@ -1204,6 +1204,80 @@
       }
     }
 
+   function asyncMapCallback(array, asyncCallback, finalCallback) {
+      const result = [];
+      let completed = 0;
+      let finished = false;
+
+      if (array.length === 0) {
+        finalCallback(null, result);
+        return;
+      }
+
+      array.forEach(function(item, index) {
+        asyncCallback(item, index, function(error, mappedValue) {
+          if (finished) return;
+
+          if (error) {
+            finished = true;
+            finalCallback(error);
+            return;
+          }
+
+          result[index] = mappedValue;
+          completed++;
+
+          if (completed === array.length) {
+            finished = true;
+            finalCallback(null, result);
+          }
+        });
+      });
+    }
+
+    function asyncMapPromise(array, asyncCallback) {
+      return Promise.all(array.map(asyncCallback));
+    }
+
+    async function asyncFilter(array, asyncPredicate) {
+      const checks = await Promise.all(array.map(asyncPredicate));
+      return array.filter(function(_, index) {
+        return checks[index];
+      });
+    }
+
+    async function* processTasksByChunks(taskArray, chunkSize = 25) {
+      for (let i = 0; i < taskArray.length; i += chunkSize) {
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 0);
+        });
+
+        yield taskArray.slice(i, i + chunkSize);
+      }
+    }
+
+    async function getTaskAnalytics(taskArray) {
+      const analytics = {
+        total: 0,
+        active: 0,
+        completed: 0,
+        highPriority: 0
+      };
+
+      for await (const chunk of processTasksByChunks(taskArray, 50)) {
+        chunk.forEach(function(task) {
+          analytics.total++;
+          if (task.completed) analytics.completed++;
+          if (!task.completed) analytics.active++;
+          if (task.priority === "Дуже важлива") analytics.highPriority++;
+        });
+      }
+
+      return analytics;
+    }
+
+    const loggedGetTaskAnalytics = log("DEBUG")(getTaskAnalytics);
+
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
     let currentTab = "active";
     let currentCategory = "all";
