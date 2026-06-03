@@ -1120,6 +1120,90 @@
       return idIterator.next().value;
     }
 
+    function memoize(fn, options = {}) {
+      const cache = new Map();
+      const maxSize = options.maxSize || Infinity;
+      const ttl = options.ttl || Infinity;
+
+      return function(...args) {
+        const key = JSON.stringify(args);
+        const cached = cache.get(key);
+        const now = Date.now();
+
+        if (cached && now - cached.createdAt < ttl) {
+          cached.usedAt = now;
+          cached.hits++;
+          return cached.value;
+        }
+
+        const value = fn.apply(this, args);
+
+        cache.set(key, {
+          value: value,
+          createdAt: now,
+          usedAt: now,
+          hits: 1
+        });
+
+        if (cache.size > maxSize) {
+          const evictionStrategy = options.strategy || "LRU";
+          let keyToDelete = cache.keys().next().value;
+
+          if (evictionStrategy === "LFU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].hits - b[1].hits;
+            })[0][0];
+          }
+
+          if (evictionStrategy === "LRU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].usedAt - b[1].usedAt;
+            })[0][0];
+          }
+
+          if (typeof options.customEviction === "function") {
+            keyToDelete = options.customEviction(cache);
+          }
+
+          cache.delete(keyToDelete);
+        }
+
+        return value;
+      };
+    }
+
+    const memoizedGetDeadlineInfo = memoize(function(deadline) {
+      return calculateDeadlineInfo(deadline);
+    }, {
+      maxSize: 100,
+      ttl: 60 * 1000,
+      strategy: "LRU"
+    });
+
+    class BiDirectionalPriorityQueue {
+      constructor(compareFunction) {
+        this.items = [];
+        this.compareFunction = compareFunction;
+      }
+
+      insert(item) {
+        this.items.push(item);
+        this.items.sort(this.compareFunction);
+      }
+
+      popHighest() {
+        return this.items.shift();
+      }
+
+      popLowest() {
+        return this.items.pop();
+      }
+
+      toSortedArray() {
+        return [...this.items];
+      }
+    }
+
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
     let currentTab = "active";
     let currentCategory = "all";
