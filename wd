@@ -1035,7 +1035,301 @@
     const activeCount = document.getElementById("activeCount");
     const completedCount = document.getElementById("completedCount");
 
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    /* =========================================================
+       ДОДАНО ДЛЯ КУРСОВОЇ: використання Task 1, 3, 4, 5, 6, 7, 8, 9
+       ========================================================= */
+
+    /* Task 9: Logging Decorator з рівнями логування */
+    const LOG_LEVELS = {
+      INFO: 1,
+      DEBUG: 2,
+      ERROR: 3
+    };
+
+    let currentLogLevel = "INFO";
+
+    function log(level = "INFO") {
+      return function(fn) {
+        return function(...args) {
+          const startedAt = performance.now();
+          const functionName = fn.name || "anonymous";
+
+          if (LOG_LEVELS[level] >= LOG_LEVELS[currentLogLevel]) {
+            console.log(`[${new Date().toISOString()}] [${level}] Виклик: ${functionName}`, args);
+          }
+
+          try {
+            const result = fn.apply(this, args);
+
+            if (result instanceof Promise) {
+              return result
+                .then(function(value) {
+                  console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, value);
+                  console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+                  return value;
+                })
+                .catch(function(error) {
+                  console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+                  throw error;
+                });
+            }
+
+            console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, result);
+            console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+            return result;
+          } catch (error) {
+            console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+            throw error;
+          }
+        };
+      };
+    }
+
+    /* Task 7: Reactive Communication через власний EventEmitter */
+    class EventEmitter {
+      constructor() {
+        this.events = {};
+      }
+
+      on(eventName, listener) {
+        if (!this.events[eventName]) {
+          this.events[eventName] = [];
+        }
+
+        this.events[eventName].push(listener);
+      }
+
+      emit(eventName, payload) {
+        const listeners = this.events[eventName] || [];
+        listeners.forEach(function(listener) {
+          listener(payload);
+        });
+      }
+    }
+
+    const appEvents = new EventEmitter();
+
+    /* Task 1: Generator + Iterator для створення унікальних ID */
+    function* taskIdGenerator(start = Date.now()) {
+      let currentId = start;
+
+      while (true) {
+        yield currentId++;
+      }
+    }
+
+    const idIterator = taskIdGenerator(Date.now());
+
+    function getNextTaskId() {
+      return idIterator.next().value;
+    }
+
+    /* Task 3: Memoization Function для кешування чистих обчислень */
+    function memoize(fn, options = {}) {
+      const cache = new Map();
+      const maxSize = options.maxSize || Infinity;
+      const ttl = options.ttl || Infinity;
+
+      return function(...args) {
+        const key = JSON.stringify(args);
+        const cached = cache.get(key);
+        const now = Date.now();
+
+        if (cached && now - cached.createdAt < ttl) {
+          cached.usedAt = now;
+          cached.hits++;
+          return cached.value;
+        }
+
+        const value = fn.apply(this, args);
+
+        cache.set(key, {
+          value: value,
+          createdAt: now,
+          usedAt: now,
+          hits: 1
+        });
+
+        if (cache.size > maxSize) {
+          const evictionStrategy = options.strategy || "LRU";
+          let keyToDelete = cache.keys().next().value;
+
+          if (evictionStrategy === "LFU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].hits - b[1].hits;
+            })[0][0];
+          }
+
+          if (evictionStrategy === "LRU") {
+            keyToDelete = [...cache.entries()].sort(function(a, b) {
+              return a[1].usedAt - b[1].usedAt;
+            })[0][0];
+          }
+
+          if (typeof options.customEviction === "function") {
+            keyToDelete = options.customEviction(cache);
+          }
+
+          cache.delete(keyToDelete);
+        }
+
+        return value;
+      };
+    }
+
+    const memoizedGetDeadlineInfo = memoize(function(deadline) {
+      return calculateDeadlineInfo(deadline);
+    }, {
+      maxSize: 100,
+      ttl: 60 * 1000,
+      strategy: "LRU"
+    });
+
+    /* Task 4: Bi-Directional Priority Queue — можна отримати найважливіше і найменш важливе */
+    class BiDirectionalPriorityQueue {
+      constructor(compareFunction) {
+        this.items = [];
+        this.compareFunction = compareFunction;
+      }
+
+      insert(item) {
+        this.items.push(item);
+        this.items.sort(this.compareFunction);
+      }
+
+      popHighest() {
+        return this.items.shift();
+      }
+
+      popLowest() {
+        return this.items.pop();
+      }
+
+      toSortedArray() {
+        return [...this.items];
+      }
+    }
+
+    /* Task 5: Async Array Function Variants */
+    function asyncMapCallback(array, asyncCallback, finalCallback) {
+      const result = [];
+      let completed = 0;
+      let finished = false;
+
+      if (array.length === 0) {
+        finalCallback(null, result);
+        return;
+      }
+
+      array.forEach(function(item, index) {
+        asyncCallback(item, index, function(error, mappedValue) {
+          if (finished) return;
+
+          if (error) {
+            finished = true;
+            finalCallback(error);
+            return;
+          }
+
+          result[index] = mappedValue;
+          completed++;
+
+          if (completed === array.length) {
+            finished = true;
+            finalCallback(null, result);
+          }
+        });
+      });
+    }
+
+    function asyncMapPromise(array, asyncCallback) {
+      return Promise.all(array.map(asyncCallback));
+    }
+
+    async function asyncFilter(array, asyncPredicate) {
+      const checks = await Promise.all(array.map(asyncPredicate));
+      return array.filter(function(_, index) {
+        return checks[index];
+      });
+    }
+
+    /* Task 6: Large Data Processing через Async Iterator */
+    async function* processTasksByChunks(taskArray, chunkSize = 25) {
+      for (let i = 0; i < taskArray.length; i += chunkSize) {
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 0);
+        });
+
+        yield taskArray.slice(i, i + chunkSize);
+      }
+    }
+
+    async function getTaskAnalytics(taskArray) {
+      const analytics = {
+        total: 0,
+        active: 0,
+        completed: 0,
+        highPriority: 0
+      };
+
+      for await (const chunk of processTasksByChunks(taskArray, 50)) {
+        chunk.forEach(function(task) {
+          analytics.total++;
+          if (task.completed) analytics.completed++;
+          if (!task.completed) analytics.active++;
+          if (task.priority === "Дуже важлива") analytics.highPriority++;
+        });
+      }
+
+      return analytics;
+    }
+
+    const loggedGetTaskAnalytics = log("DEBUG")(getTaskAnalytics);
+
+    /* Task 8: Authentication Proxy for API Service */
+    const apiAuthState = {
+      token: "coursework-demo-token"
+    };
+
+    const localTaskApi = {
+      readTasks() {
+        return JSON.parse(localStorage.getItem("tasks")) || [];
+      },
+
+      saveTasks(taskArray) {
+        localStorage.setItem("tasks", JSON.stringify(taskArray));
+        return true;
+      },
+
+      readTheme() {
+        return localStorage.getItem("siteTheme") || "light";
+      },
+
+      saveTheme(theme) {
+        taskApi.saveTheme(theme);
+        return true;
+      }
+    };
+
+    const taskApi = new Proxy(localTaskApi, {
+      get(target, property) {
+        const originalValue = target[property];
+
+        if (typeof originalValue !== "function") {
+          return originalValue;
+        }
+
+        return function(...args) {
+          if (!apiAuthState.token) {
+            throw new Error("Доступ заборонено: немає токена авторизації");
+          }
+
+          return originalValue.apply(target, args);
+        };
+      }
+    });
+
+    let tasks = taskApi.readTasks();
     let currentTab = "active";
     let currentCategory = "all";
     let editingTaskId = null;
@@ -1053,17 +1347,18 @@
         document.body.classList.add("theme-" + theme);
       }
 
-      localStorage.setItem("siteTheme", theme);
+      taskApi.saveTheme(theme);
     }
 
     function loadTheme() {
-      const savedTheme = localStorage.getItem("siteTheme") || "light";
+      const savedTheme = taskApi.readTheme();
       themeSelect.value = savedTheme;
       applyTheme(savedTheme);
     }
 
     function saveTasks() {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
+      taskApi.saveTasks(tasks);
+      appEvents.emit("tasks:saved", tasks);
     }
 
     function shortenText(text, maxLength = 15) {
@@ -1086,7 +1381,7 @@
       });
     }
 
-    function getDeadlineInfo(deadline) {
+    function calculateDeadlineInfo(deadline) {
       if (!deadline) {
         return {
           className: "safe",
@@ -1143,6 +1438,10 @@
         level: "more-than-two-weeks",
         text: `Часу достатньо (${days} дн.)`
       };
+    }
+
+    function getDeadlineInfo(deadline) {
+      return memoizedGetDeadlineInfo(deadline);
     }
 
     function showToast(title, message) {
@@ -1252,16 +1551,37 @@
       return new Date(deadline).getTime();
     }
 
-    function sortTasksByPriorityAndDeadline(taskArray) {
-      return [...taskArray].sort(function(a, b) {
-        const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
+    function compareTasksByPriorityAndDeadline(a, b) {
+      const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
 
-        if (priorityDifference !== 0) {
-          return priorityDifference;
-        }
+      if (priorityDifference !== 0) {
+        return priorityDifference;
+      }
 
-        return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
+      return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
+    }
+
+    function buildPriorityQueue(taskArray) {
+      const priorityQueue = new BiDirectionalPriorityQueue(compareTasksByPriorityAndDeadline);
+
+      taskArray.forEach(function(task) {
+        priorityQueue.insert(task);
       });
+
+      return priorityQueue;
+    }
+
+    function getPriorityExtremes(taskArray) {
+      const priorityQueue = buildPriorityQueue(taskArray);
+
+      return {
+        highest: priorityQueue.popHighest() || null,
+        lowest: priorityQueue.popLowest() || null
+      };
+    }
+
+    function sortTasksByPriorityAndDeadline(taskArray) {
+      return buildPriorityQueue(taskArray).toSortedArray();
     }
 
     function taskMatchesFilters(task) {
@@ -1286,17 +1606,36 @@
     }
 
     function updateStats() {
-      const activeTasks = tasks.filter(function(task) {
+      asyncFilter(tasks, async function(task) {
         return !task.completed;
+      }).then(function(activeTasks) {
+        activeCount.textContent = activeTasks.length;
       });
 
-      const completedTasks = tasks.filter(function(task) {
+      asyncMapPromise(tasks, async function(task) {
         return task.completed;
+      }).then(function(completedChecks) {
+        completedCount.textContent = completedChecks.filter(Boolean).length;
       });
 
-      totalCount.textContent = tasks.length;
-      activeCount.textContent = activeTasks.length;
-      completedCount.textContent = completedTasks.length;
+      asyncMapCallback(
+        tasks,
+        function(task, index, callback) {
+          setTimeout(function() {
+            callback(null, task);
+          }, 0);
+        },
+        function(error, mappedTasks) {
+          if (!error) {
+            totalCount.textContent = mappedTasks.length;
+          }
+        }
+      );
+
+      loggedGetTaskAnalytics(tasks).then(function(analytics) {
+        analytics.priorityExtremes = getPriorityExtremes(tasks);
+        appEvents.emit("analytics:updated", analytics);
+      });
     }
 
     function renderTasks() {
@@ -1493,7 +1832,7 @@
 
     function addTask(text, deadline, priority, category, description) {
       const newTask = {
-        id: Date.now(),
+        id: getNextTaskId(),
         text: text,
         completed: false,
         createdAt: new Date().toISOString(),
@@ -1509,6 +1848,7 @@
       saveTasks();
       renderTasks();
       showToast("Завдання створено", text);
+      appEvents.emit("task:created", newTask);
     }
 
     function updateTask(id, text, deadline, priority, category, description) {
@@ -1530,6 +1870,7 @@
       saveTasks();
       renderTasks();
       showToast("Завдання оновлено", text);
+      appEvents.emit("task:updated", { id: id, text: text });
     }
 
     function completeTask(id) {
@@ -1546,6 +1887,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:completed", id);
     }
 
     function restoreTask(id) {
@@ -1563,6 +1905,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:restored", id);
     }
 
     function startEditTask(id) {
@@ -1589,6 +1932,7 @@
 
       saveTasks();
       renderTasks();
+      appEvents.emit("task:deleted", id);
     }
 
     function clearHistory() {
@@ -1713,6 +2057,30 @@
       filterModal.classList.remove("visible");
       renderTasks();
     };
+
+    appEvents.on("task:created", function(task) {
+      console.log("EventEmitter: створено завдання", task.text);
+    });
+
+    appEvents.on("task:updated", function(task) {
+      console.log("EventEmitter: оновлено завдання", task.text);
+    });
+
+    appEvents.on("task:completed", function(id) {
+      console.log("EventEmitter: виконано завдання", id);
+    });
+
+    appEvents.on("task:restored", function(id) {
+      console.log("EventEmitter: завдання повернуто", id);
+    });
+
+    appEvents.on("task:deleted", function(id) {
+      console.log("EventEmitter: завдання видалено", id);
+    });
+
+    appEvents.on("analytics:updated", function(analytics) {
+      console.log("Async Iterator analytics:", analytics);
+    });
 
     loadTheme();
     updatePriorityPreview();
