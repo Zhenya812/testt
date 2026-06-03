@@ -1035,6 +1035,91 @@
     const activeCount = document.getElementById("activeCount");
     const completedCount = document.getElementById("completedCount");
 
+
+    const LOG_LEVELS = {
+      INFO: 1,
+      DEBUG: 2,
+      ERROR: 3
+    };
+
+    let currentLogLevel = "INFO";
+
+    function log(level = "INFO") {
+      return function(fn) {
+        return function(...args) {
+          const startedAt = performance.now();
+          const functionName = fn.name || "anonymous";
+
+          if (LOG_LEVELS[level] >= LOG_LEVELS[currentLogLevel]) {
+            console.log(`[${new Date().toISOString()}] [${level}] Виклик: ${functionName}`, args);
+          }
+
+          try {
+            const result = fn.apply(this, args);
+
+            if (result instanceof Promise) {
+              return result
+                .then(function(value) {
+                  console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, value);
+                  console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+                  return value;
+                })
+                .catch(function(error) {
+                  console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+                  throw error;
+                });
+            }
+
+            console.log(`[${new Date().toISOString()}] [${level}] Результат: ${functionName}`, result);
+            console.log(`Час виконання ${functionName}: ${(performance.now() - startedAt).toFixed(2)} мс`);
+            return result;
+          } catch (error) {
+            console.error(`[${new Date().toISOString()}] [ERROR] Помилка: ${functionName}`, error);
+            throw error;
+          }
+        };
+      };
+    }
+
+  
+    class EventEmitter {
+      constructor() {
+        this.events = {};
+      }
+
+      on(eventName, listener) {
+        if (!this.events[eventName]) {
+          this.events[eventName] = [];
+        }
+
+        this.events[eventName].push(listener);
+      }
+
+      emit(eventName, payload) {
+        const listeners = this.events[eventName] || [];
+        listeners.forEach(function(listener) {
+          listener(payload);
+        });
+      }
+    }
+
+    const appEvents = new EventEmitter();
+
+  
+    function* taskIdGenerator(start = Date.now()) {
+      let currentId = start;
+
+      while (true) {
+        yield currentId++;
+      }
+    }
+
+    const idIterator = taskIdGenerator(Date.now());
+
+    function getNextTaskId() {
+      return idIterator.next().value;
+    }
+
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
     let currentTab = "active";
     let currentCategory = "all";
