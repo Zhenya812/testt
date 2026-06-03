@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Список справ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    :root {
+      --page-bg: #f2f4f8;
+      --app-bg: #ffffff;
+      --panel-bg: #f5f7fb;
+      --soft-bg: #e8ecf3;
+      --text-main: #222;
+      --text-muted: #444;
+      --text-light: #667085;
+      --border-color: #dfe5f0;
+      --input-border: #cfd6e4;
+      --primary: #2d6cdf;
+      --primary-hover: #1f55b5;
+      --shadow-main: rgba(0, 0, 0, 0.1);
+      --modal-shadow: rgba(0, 0, 0, 0.25);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--page-bg);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 15px;
+      color: var(--text-main);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.theme-dark {
+      --page-bg: #111827;
+      --app-bg: #1f2937;
+      --panel-bg: #273449;
+      --soft-bg: #374151;
+      --text-main: #f9fafb;
+      --text-muted: #d1d5db;
+      --text-light: #9ca3af;
+      --border-color: #4b5563;
+      --input-border: #6b7280;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --shadow-main: rgba(0, 0, 0, 0.35);
+      --modal-shadow: rgba(0, 0, 0, 0.55);
+    }
+
+    body.theme-gradient-berries {
+      --page-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --app-bg: rgba(255, 255, 255, 0.92);
+      --panel-bg: rgba(245, 247, 251, 0.9);
+      --soft-bg: rgba(232, 236, 243, 0.9);
+      --text-main: #1f2937;
+      --text-muted: #374151;
+      --text-light: #667085;
+      --border-color: rgba(223, 229, 240, 0.9);
+      --input-border: #cfd6e4;
+      --primary: #7c3aed;
+      --primary-hover: #5b21b6;
+      --shadow-main: rgba(31, 41, 55, 0.22);
+      --modal-shadow: rgba(31, 41, 55, 0.35);
+    }
+
+    body.theme-gradient-sunset {
+      --page-bg: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 45%, #fad0c4 100%);
+      --app-bg: rgba(255, 255, 255, 0.93);
+      --panel-bg: rgba(255, 245, 242, 0.92);
+      --soft-bg: rgba(255, 230, 224, 0.9);
+      --text-main: #2d1b1b;
+      --text-muted: #4b2c2c;
+      --text-light: #795454;
+      --border-color: rgba(255, 197, 188, 0.95);
+      --input-border: #e7b7b0;
+      --primary: #e11d48;
+      --primary-hover: #be123c;
+      --shadow-main: rgba(80, 20, 30, 0.2);
+      --modal-shadow: rgba(80, 20, 30, 0.35);
+    }
+
+    body.theme-gradient-ocean {
+      --page-bg: linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #6a11cb 100%);
+      --app-bg: rgba(255, 255, 255, 0.92);
+      --panel-bg: rgba(235, 247, 255, 0.9);
+      --soft-bg: rgba(219, 239, 255, 0.9);
+      --text-main: #102033;
+      --text-muted: #243b55;
+      --text-light: #55708f;
+      --border-color: rgba(186, 219, 245, 0.95);
+      --input-border: #9fc3e0;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --shadow-main: rgba(12, 52, 95, 0.22);
+      --modal-shadow: rgba(12, 52, 95, 0.35);
+    }
+
+    body.theme-gradient-forest {
+      --page-bg: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --app-bg: rgba(255, 255, 255, 0.92);
+      --panel-bg: rgba(238, 255, 245, 0.9);
+      --soft-bg: rgba(220, 252, 231, 0.9);
+      --text-main: #123026;
+      --text-muted: #214438;
+      --text-light: #527565;
+      --border-color: rgba(172, 230, 197, 0.95);
+      --input-border: #92cfae;
+      --primary: #059669;
+      --primary-hover: #047857;
+      --shadow-main: rgba(18, 48, 38, 0.22);
+      --modal-shadow: rgba(18, 48, 38, 0.35);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 850px;
+      background: var(--app-bg);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 10px 30px var(--shadow-main);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--text-main);
+    }
+
+    .theme-panel {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .theme-panel select {
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      background: var(--app-bg);
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .theme-panel select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(45, 108, 223, 0.15);
+    }
+
+    .top-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .top-panel-text {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .open-modal-btn,
+    .modal-actions button,
+    .task button,
+    .tabs button,
+    .clear-history {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .open-modal-btn,
+    .save-task-btn {
+      background: var(--primary);
+      color: white;
+    }
+
+    .open-modal-btn:hover,
+    .save-task-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .cancel-modal-btn {
+      background: #6c757d;
+      color: white;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tabs button {
+      flex: 1;
+      background: var(--soft-bg);
+      color: var(--text-main);
+    }
+
+    .tabs button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .category-tabs button {
+      border: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      background: var(--soft-bg);
+      color: var(--text-main);
+      transition: 0.2s;
+    }
+
+    .category-tabs button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .task-category {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(45, 108, 223, 0.12);
+      color: #1f55b5;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: var(--panel-bg);
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .filter-panel {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .filter-open-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      background: var(--primary);
+      color: #fff;
+      transition: 0.2s;
+    }
+
+    .filter-open-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .filter-field label {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+
+    .filter-field select {
+      width: 100%;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .filter-field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(45, 108, 223, 0.15);
+    }
+
+    .reset-filter-btn {
+      background: #6c757d;
+      color: #fff;
+    }
+
+
+    .legend-item {
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #ddd;
+      color: #222;
+    }
+
+    .legend-safe {
+      background: #e9f8ee;
+    }
+
+    .legend-warning {
+      background: #fff7d6;
+    }
+
+    .legend-overdue {
+      background: #ffd6d6;
+    }
+
+    .task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .task {
+      position: relative;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .task:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .priority-corner {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-top: 28px solid #6c757d;
+      border-left: 28px solid transparent;
+      border-top-right-radius: 9px;
+    }
+
+    .priority-normal {
+      border-top-color: #28a745;
+    }
+
+    .priority-important {
+      border-top-color: #ffc107;
+    }
+
+    .priority-high {
+      border-top-color: #dc3545;
+    }
+
+    .priority-legend {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .priority-legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .priority-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .priority-dot.normal {
+      background: #28a745;
+    }
+
+    .priority-dot.important {
+      background: #ffc107;
+    }
+
+    .priority-dot.high {
+      background: #dc3545;
+    }
+
+    .task.safe {
+      background: #e9f8ee;
+      border-color: #95d5a6;
+    }
+
+    .task.warning {
+      background: #fff7d6;
+      border-color: #f0d36b;
+    }
+
+    .task.overdue {
+      background: #ffd6d6;
+      border-color: #e05252;
+    }
+
+    .task.completed {
+      background: #eef1f5;
+      border-color: #c6ccd6;
+    }
+
+    .task-info {
+      flex: 1;
+    }
+
+    .task-title {
+      font-size: 16px;
+      color: var(--text-main);
+      margin-bottom: 5px;
+      word-break: break-word;
+    }
+
+    .task-date,
+    .task-deadline,
+    .task-status,
+    .task-description,
+    .task-priority {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .task-status strong,
+    .task-priority strong {
+      color: var(--text-main);
+    }
+
+    .task-description-preview {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .open-hint {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 5px;
+    }
+
+    .task-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      justify-content: center;
+      min-width: 115px;
+    }
+
+    .task-actions button {
+      width: 100%;
+      white-space: nowrap;
+    }
+
+    .complete-btn {
+      background: #28a745;
+      color: #fff;
+    }
+
+    .edit-btn {
+      background: #ffc107;
+      color: var(--text-main);
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: #fff;
+    }
+
+    .restore-btn {
+      background: #17a2b8;
+      color: #fff;
+    }
+
+    .empty {
+      text-align: center;
+      color: #777;
+      padding: 25px 0;
+    }
+
+    .clear-history {
+      margin-top: 20px;
+      width: 100%;
+      background: #dc3545;
+      color: #fff;
+      display: none;
+    }
+
+    .clear-history.visible {
+      display: block;
+    }
+
+    .toast-container {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: 340px;
+      background: #222;
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      z-index: 900;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 460px;
+      background: var(--app-bg);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 20px 50px var(--modal-shadow);
+      animation: modalShow 0.25s ease;
+    }
+
+    .modal h2 {
+      font-size: 22px;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 18px;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .modal-field label {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+
+    .modal-field input,
+    .modal-field select,
+    .modal-field textarea {
+      width: 100%;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      resize: vertical;
+    }
+
+    .modal-field input:focus,
+    .modal-field select:focus,
+    .modal-field textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(45, 108, 223, 0.15);
+    }
+
+    .priority-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .details-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .details-item {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .details-item strong {
+      color: var(--text-main);
+    }
+
+    .details-description {
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes modalShow {
+      from {
+        transform: translateY(20px) scale(0.96);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    body.theme-dark .task.safe {
+      background: #123524;
+      border-color: #22c55e;
+    }
+
+    body.theme-dark .task.warning {
+      background: #3f3212;
+      border-color: #eab308;
+    }
+
+    body.theme-dark .task.overdue {
+      background: #451a1a;
+      border-color: #ef4444;
+    }
+
+    body.theme-dark .task.completed {
+      background: #374151;
+      border-color: #6b7280;
+    }
+
+    body.theme-dark .legend-safe {
+      background: #e9f8ee;
+    }
+
+    body.theme-dark .legend-warning {
+      background: #fff7d6;
+    }
+
+    body.theme-dark .legend-overdue {
+      background: #ffd6d6;
+    }
+
+    body.theme-dark .modal-field input,
+    body.theme-dark .modal-field select,
+    body.theme-dark .modal-field textarea,
+    body.theme-dark .filter-field select {
+      background: #111827;
+      color: var(--text-main);
+    }
+
+    body.theme-gradient-berries .app,
+    body.theme-gradient-sunset .app,
+    body.theme-gradient-ocean .app,
+    body.theme-gradient-forest .app {
+      backdrop-filter: blur(10px);
+    }
+
+    @media (max-width: 750px) {
+      .theme-panel {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .theme-panel select {
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      background: var(--app-bg);
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .theme-panel select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(45, 108, 223, 0.15);
+    }
+
+    .top-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .legend,
+      .priority-legend {
+        grid-template-columns: 1fr;
+      }
+
+      .task {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .task-actions {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+      }
+
+      .stats {
+        flex-direction: column;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="modal-overlay" id="taskModal">
+    <div class="modal">
+      <h2 id="modalTitle">Нове завдання</h2>
+      <p class="modal-subtitle">Налаштуйте завдання перед додаванням у список</p>
+
+      <form class="modal-form" id="taskForm">
+        <div class="modal-field">
+          <label for="taskInput">Назва завдання</label>
+          <input type="text" id="taskInput" placeholder="Наприклад: зробити лабораторну" />
+        </div>
+
+        <div class="modal-field">
+          <label for="deadlineInput">Введіть час дедлайну</label>
+          <input type="datetime-local" id="deadlineInput" />
+        </div>
+
+        <div class="modal-field">
+          <label for="priorityInput">Важливість</label>
+          <select id="priorityInput">
+            <option value="Звичайна">Звичайна</option>
+            <option value="Важлива">Важлива</option>
+            <option value="Дуже важлива">Дуже важлива</option>
+          </select>
+          <div class="priority-preview" id="priorityPreview">
+            <span class="priority-dot normal" id="priorityPreviewDot"></span>
+            <span id="priorityPreviewText">Зелений — звичайна важливість</span>
+          </div>
+        </div>
+
+        <div class="modal-field">
+          <label for="categoryInput">Категорія завдання</label>
+          <select id="categoryInput">
+            <option value="Побут">Побут</option>
+            <option value="Навчання">Навчання</option>
+            <option value="Робота">Робота</option>
+          </select>
+        </div>
+
+        <div class="modal-field">
+          <label for="descriptionInput">Опис або примітка</label>
+          <textarea id="descriptionInput" rows="3" placeholder="Можна залишити порожнім"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="cancel-modal-btn" id="cancelEditBtn">Скасувати</button>
+          <button type="submit" class="save-task-btn" id="submitBtn">Додати</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="filterModal">
+    <div class="modal">
+      <h2>Фільтр завдань</h2>
+      <p class="modal-subtitle">Оберіть, які завдання потрібно показати</p>
+
+      <div class="filters">
+        <div class="filter-field">
+          <label for="priorityFilter">Фільтр за важливістю</label>
+          <select id="priorityFilter">
+            <option value="all">Усі завдання</option>
+            <option value="Дуже важлива">Дуже важлива</option>
+            <option value="Важлива">Важлива</option>
+            <option value="Звичайна">Звичайна</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="deadlineFilter">Фільтр за терміном</label>
+          <select id="deadlineFilter">
+            <option value="all">Усі терміни</option>
+            <option value="overdue">Прострочені</option>
+            <option value="one-day">1 день або менше</option>
+            <option value="one-week">Тиждень або менше</option>
+            <option value="two-weeks">Менше 2 тижнів</option>
+            <option value="more-than-two-weeks">Більше 2 тижнів</option>
+            <option value="no-deadline">Без дедлайну</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="reset-filter-btn" id="resetFilterBtn">Скинути</button>
+        <button type="button" class="save-task-btn" id="applyFilterBtn">Застосувати</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="detailsModal">
+    <div class="modal">
+      <h2 id="detailsTitle">Інформація про завдання</h2>
+      <p class="modal-subtitle">Повні дані вибраного завдання</p>
+
+      <div class="details-list" id="detailsContent"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="cancel-modal-btn" id="closeDetailsBtn">Закрити</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <h1>Список справ</h1>
+
+    <div class="theme-panel">
+      <label for="themeSelect">Тема сайту:</label>
+      <select id="themeSelect">
+        <option value="light">Світла</option>
+        <option value="dark">Темна</option>
+        <option value="gradient-berries">Градієнт ягідний</option>
+        <option value="gradient-sunset">Градієнт захід</option>
+        <option value="gradient-ocean">Градієнт океан</option>
+        <option value="gradient-forest">Градієнт ліс</option>
+      </select>
+    </div>
+
+    <div class="top-panel">
+      <div class="top-panel-text">Плануйте справи, контролюйте дедлайни та зберігайте історію виконаних завдань:</div>
+      <button class="open-modal-btn" id="openCreateModalBtn" type="button">Створити завдання</button>
+    </div>
+
+    <div class="tabs">
+      <button class="active" id="activeTab" type="button">Активні завдання</button>
+      <button id="historyTab" type="button">Історія виконаних</button>
+    </div>
+
+    <div class="category-tabs">
+      <button class="active" data-category="all" type="button">Усі</button>
+      <button data-category="Побут" type="button">Побут</button>
+      <button data-category="Навчання" type="button">Навчання</button>
+      <button data-category="Робота" type="button">Робота</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box">Усього: <span id="totalCount">0</span></div>
+      <div class="stat-box">Активні: <span id="activeCount">0</span></div>
+      <div class="stat-box">Виконані: <span id="completedCount">0</span></div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item legend-safe">Зелений: більше 2 тижнів</div>
+      <div class="legend-item legend-warning">Жовтий: залишився тиждень або менше</div>
+      <div class="legend-item legend-overdue">Червоний: залишився день або прострочено</div>
+    </div>
+
+    <div class="priority-legend">
+      <div class="priority-legend-item"><span class="priority-dot normal"></span>Звичайна важливість</div>
+      <div class="priority-legend-item"><span class="priority-dot important"></span>Важлива</div>
+      <div class="priority-legend-item"><span class="priority-dot high"></span>Дуже важлива</div>
+    </div>
+
+
+    <div class="filter-panel">
+      <button class="filter-open-btn" id="openFilterBtn" type="button">Фільтр</button>
+    </div>
+
+    <ul class="task-list" id="taskList"></ul>
+
+    <button class="clear-history" id="clearHistoryBtn" type="button">Очистити історію</button>
+  </div>
+
+  <script>
+    const taskModal = document.getElementById("taskModal");
+    const detailsModal = document.getElementById("detailsModal");
+    const filterModal = document.getElementById("filterModal");
+    const detailsTitle = document.getElementById("detailsTitle");
+    const detailsContent = document.getElementById("detailsContent");
+    const closeDetailsBtn = document.getElementById("closeDetailsBtn");
+    const openCreateModalBtn = document.getElementById("openCreateModalBtn");
+    const modalTitle = document.getElementById("modalTitle");
+    const taskForm = document.getElementById("taskForm");
+    const taskInput = document.getElementById("taskInput");
+    const deadlineInput = document.getElementById("deadlineInput");
+    const priorityInput = document.getElementById("priorityInput");
+    const priorityPreviewDot = document.getElementById("priorityPreviewDot");
+    const priorityPreviewText = document.getElementById("priorityPreviewText");
+    const categoryInput = document.getElementById("categoryInput");
+    const descriptionInput = document.getElementById("descriptionInput");
+    const submitBtn = document.getElementById("submitBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const taskList = document.getElementById("taskList");
+    const toastContainer = document.getElementById("toastContainer");
+    const activeTab = document.getElementById("activeTab");
+    const historyTab = document.getElementById("historyTab");
+    const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+    const openFilterBtn = document.getElementById("openFilterBtn");
+    const priorityFilter = document.getElementById("priorityFilter");
+    const deadlineFilter = document.getElementById("deadlineFilter");
+    const applyFilterBtn = document.getElementById("applyFilterBtn");
+    const resetFilterBtn = document.getElementById("resetFilterBtn");
+    const categoryButtons = document.querySelectorAll(".category-tabs button");
+    const themeSelect = document.getElementById("themeSelect");
+
+    const totalCount = document.getElementById("totalCount");
+    const activeCount = document.getElementById("activeCount");
+    const completedCount = document.getElementById("completedCount");
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let currentTab = "active";
+    let currentCategory = "all";
+    let editingTaskId = null;
+
+    function applyTheme(theme) {
+      document.body.classList.remove(
+        "theme-dark",
+        "theme-gradient-berries",
+        "theme-gradient-sunset",
+        "theme-gradient-ocean",
+        "theme-gradient-forest"
+      );
+
+      if (theme !== "light") {
+        document.body.classList.add("theme-" + theme);
+      }
+
+      localStorage.setItem("siteTheme", theme);
+    }
+
+    function loadTheme() {
+      const savedTheme = localStorage.getItem("siteTheme") || "light";
+      themeSelect.value = savedTheme;
+      applyTheme(savedTheme);
+    }
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function shortenText(text, maxLength = 15) {
+      if (!text) return "";
+
+      return text.length > maxLength
+        ? text.slice(0, maxLength) + "..."
+        : text;
+    }
+
+    function formatDate(date) {
+      if (!date) return "не вказано";
+
+      return new Date(date).toLocaleDateString("uk-UA", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function getDeadlineInfo(deadline) {
+      if (!deadline) {
+        return {
+          className: "safe",
+          level: "no-deadline",
+          text: "Дедлайн не встановлено"
+        };
+      }
+
+      const now = new Date();
+      const deadlineDate = new Date(deadline);
+      const difference = deadlineDate - now;
+      const oneDay = 24 * 60 * 60 * 1000;
+      const oneWeek = 7 * oneDay;
+      const twoWeeks = 14 * oneDay;
+
+      if (difference < 0) {
+        return {
+          className: "overdue",
+          level: "overdue",
+          text: "Термін виконання минув"
+        };
+      }
+
+      if (difference <= oneDay) {
+        const hours = Math.ceil(difference / (60 * 60 * 1000));
+        return {
+          className: "overdue",
+          level: "one-day",
+          text: `Залишився 1 день або менше (${hours} год.)`
+        };
+      }
+
+      if (difference <= oneWeek) {
+        const days = Math.ceil(difference / oneDay);
+        return {
+          className: "warning",
+          level: "one-week",
+          text: `Залишився тиждень або менше (${days} дн.)`
+        };
+      }
+
+      if (difference <= twoWeeks) {
+        const days = Math.ceil(difference / oneDay);
+        return {
+          className: "safe",
+          level: "two-weeks",
+          text: `До дедлайну залишилось менше 2 тижнів (${days} дн.)`
+        };
+      }
+
+      const days = Math.ceil(difference / oneDay);
+      return {
+        className: "safe",
+        level: "more-than-two-weeks",
+        text: `Часу достатньо (${days} дн.)`
+      };
+    }
+
+    function showToast(title, message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `
+        <div class="toast-title">${title}</div>
+        <div>${message}</div>
+      `;
+
+      toastContainer.appendChild(toast);
+
+      setTimeout(function() {
+        toast.remove();
+      }, 5000);
+    }
+
+    function getDeadlineNotificationText(level) {
+      if (level === "two-weeks") return "До кінця залишилося менше двох тижнів";
+      if (level === "one-week") return "До кінця залишився тиждень або менше";
+      if (level === "one-day") return "До кінця залишився один день або менше";
+      if (level === "overdue") return "Термін виконання завдання минув";
+      return null;
+    }
+
+    function checkDeadlineNotifications() {
+      let changed = false;
+
+      tasks = tasks.map(function(task) {
+        if (task.completed || !task.deadline) {
+          return task;
+        }
+
+        const deadlineInfo = getDeadlineInfo(task.deadline);
+
+        if (task.lastDeadlineLevel === undefined) {
+          changed = true;
+          return {
+            ...task,
+            lastDeadlineLevel: deadlineInfo.level
+          };
+        }
+
+        if (task.lastDeadlineLevel !== deadlineInfo.level) {
+          const message = getDeadlineNotificationText(deadlineInfo.level);
+
+          if (message) {
+            showToast(task.text, message);
+          }
+
+          changed = true;
+          return {
+            ...task,
+            lastDeadlineLevel: deadlineInfo.level
+          };
+        }
+
+        return task;
+      });
+
+      if (changed) {
+        saveTasks();
+      }
+    }
+
+    function getPriorityWeight(priority) {
+      if (priority === "Дуже важлива") return 3;
+      if (priority === "Важлива") return 2;
+      return 1;
+    }
+
+    function getPriorityClass(priority) {
+      if (priority === "Дуже важлива") return "priority-high";
+      if (priority === "Важлива") return "priority-important";
+      return "priority-normal";
+    }
+
+    function getPriorityPreview(priority) {
+      if (priority === "Дуже важлива") {
+        return {
+          dotClass: "priority-dot high",
+          text: "Червоний — дуже важливе завдання"
+        };
+      }
+
+      if (priority === "Важлива") {
+        return {
+          dotClass: "priority-dot important",
+          text: "Жовтий — важливе завдання"
+        };
+      }
+
+      return {
+        dotClass: "priority-dot normal",
+        text: "Зелений — звичайна важливість"
+      };
+    }
+
+    function updatePriorityPreview() {
+      const preview = getPriorityPreview(priorityInput.value);
+      priorityPreviewDot.className = preview.dotClass;
+      priorityPreviewText.textContent = preview.text;
+    }
+
+    function getDeadlineTime(deadline) {
+      if (!deadline) return Number.MAX_SAFE_INTEGER;
+      return new Date(deadline).getTime();
+    }
+
+    function sortTasksByPriorityAndDeadline(taskArray) {
+      return [...taskArray].sort(function(a, b) {
+        const priorityDifference = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
+
+        if (priorityDifference !== 0) {
+          return priorityDifference;
+        }
+
+        return getDeadlineTime(a.deadline) - getDeadlineTime(b.deadline);
+      });
+    }
+
+    function taskMatchesFilters(task) {
+      const selectedPriority = priorityFilter.value;
+      const selectedDeadline = deadlineFilter.value;
+      const deadlineLevel = getDeadlineInfo(task.deadline).level;
+      const taskCategory = task.category || "Побут";
+
+      if (currentCategory !== "all" && taskCategory !== currentCategory) {
+        return false;
+      }
+
+      if (selectedPriority !== "all" && (task.priority || "Звичайна") !== selectedPriority) {
+        return false;
+      }
+
+      if (selectedDeadline !== "all" && deadlineLevel !== selectedDeadline) {
+        return false;
+      }
+
+      return true;
+    }
+
+    function updateStats() {
+      const activeTasks = tasks.filter(function(task) {
+        return !task.completed;
+      });
+
+      const completedTasks = tasks.filter(function(task) {
+        return task.completed;
+      });
+
+      totalCount.textContent = tasks.length;
+      activeCount.textContent = activeTasks.length;
+      completedCount.textContent = completedTasks.length;
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+
+      const filteredTasks = sortTasksByPriorityAndDeadline(
+        tasks.filter(function(task) {
+          const tabMatches = currentTab === "active" ? !task.completed : task.completed;
+          return tabMatches && taskMatchesFilters(task);
+        })
+      );
+
+      if (filteredTasks.length === 0) {
+        const emptyMessage = document.createElement("li");
+        emptyMessage.className = "empty";
+        emptyMessage.textContent = currentTab === "active"
+          ? "Активних завдань за цим фільтром немає"
+          : "В історії немає завдань за цим фільтром";
+        taskList.appendChild(emptyMessage);
+      }
+
+      filteredTasks.forEach(function(task) {
+        const deadlineInfo = getDeadlineInfo(task.deadline);
+
+        const li = document.createElement("li");
+        li.className = task.completed ? "task completed" : "task " + deadlineInfo.className;
+
+        const priorityCorner = document.createElement("span");
+        priorityCorner.className = "priority-corner " + getPriorityClass(task.priority || "Звичайна");
+        priorityCorner.title = "Важливість: " + (task.priority || "Звичайна");
+
+        const taskInfo = document.createElement("div");
+        taskInfo.className = "task-info";
+
+        const title = document.createElement("div");
+        title.className = "task-title";
+        title.textContent = task.text;
+
+        const date = document.createElement("div");
+        date.className = "task-date";
+
+        if (task.completed) {
+          date.textContent = "Створено: " + formatDate(task.createdAt) + " | Виконано: " + formatDate(task.completedAt);
+        } else {
+          date.textContent = "Створено: " + formatDate(task.createdAt);
+        }
+
+        const deadline = document.createElement("div");
+        deadline.className = "task-deadline";
+        deadline.textContent = "Дедлайн: " + formatDate(task.deadline);
+
+        const category = document.createElement("div");
+        category.className = "task-category";
+        category.textContent = task.category || "Побут";
+
+        const priority = document.createElement("div");
+        priority.className = "task-priority";
+        priority.innerHTML = "<strong>Важливість:</strong> " + (task.priority || "Звичайна");
+
+        const description = document.createElement("div");
+        description.className = "task-description-preview";
+        description.textContent = task.description ? "Опис: " + shortenText(task.description, 15) : "";
+
+        const status = document.createElement("div");
+        status.className = "task-status";
+        status.innerHTML = "<strong>Стан:</strong> " + (task.completed ? "Завдання виконано:" : deadlineInfo.text);
+
+        const openHint = document.createElement("div");
+        openHint.className = "open-hint";
+        openHint.textContent = "Натисніть на завдання, щоб переглянути всю інформацію";
+
+        taskInfo.appendChild(title);
+        taskInfo.appendChild(date);
+        taskInfo.appendChild(deadline);
+        taskInfo.appendChild(category);
+        taskInfo.appendChild(priority);
+        if (task.description) taskInfo.appendChild(description);
+        taskInfo.appendChild(status);
+        taskInfo.appendChild(openHint);
+
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
+        actions.onclick = function(event) {
+          event.stopPropagation();
+        };
+
+        if (!task.completed) {
+          const completeBtn = document.createElement("button");
+          completeBtn.className = "complete-btn";
+          completeBtn.textContent = "Виконано";
+          completeBtn.onclick = function() {
+            completeTask(task.id);
+          };
+          actions.appendChild(completeBtn);
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "edit-btn";
+          editBtn.textContent = "Редагувати";
+          editBtn.onclick = function() {
+            startEditTask(task.id);
+          };
+          actions.appendChild(editBtn);
+        } else {
+          const restoreBtn = document.createElement("button");
+          restoreBtn.className = "restore-btn";
+          restoreBtn.textContent = "Повернути";
+          restoreBtn.onclick = function() {
+            restoreTask(task.id);
+          };
+          actions.appendChild(restoreBtn);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.textContent = "Видалити";
+        deleteBtn.onclick = function() {
+          deleteTask(task.id);
+        };
+        actions.appendChild(deleteBtn);
+
+        li.onclick = function() {
+          openDetailsModal(task.id);
+        };
+
+        li.appendChild(priorityCorner);
+        li.appendChild(taskInfo);
+        li.appendChild(actions);
+        taskList.appendChild(li);
+      });
+
+      clearHistoryBtn.classList.toggle(
+        "visible",
+        currentTab === "history" && tasks.some(function(task) {
+          return task.completed;
+        })
+      );
+
+      updateStats();
+    }
+
+    function openDetailsModal(id) {
+      const task = tasks.find(function(item) {
+        return item.id === id;
+      });
+
+      if (!task) return;
+
+      const deadlineInfo = getDeadlineInfo(task.deadline);
+      detailsTitle.textContent = task.text;
+      detailsContent.innerHTML = `
+        <div class="details-item"><strong>Назва:</strong> ${task.text}</div>
+        <div class="details-item"><strong>Створено:</strong> ${formatDate(task.createdAt)}</div>
+        <div class="details-item"><strong>Дедлайн:</strong> ${formatDate(task.deadline)}</div>
+        <div class="details-item"><strong>Категорія:</strong> ${task.category || "Побут"}</div>
+        <div class="details-item"><strong>Важливість:</strong> ${task.priority || "Звичайна"}</div>
+        <div class="details-item"><strong>Стан:</strong> ${task.completed ? "Завдання виконано:" : deadlineInfo.text}</div>
+        <div class="details-item"><strong>Виконано:</strong> ${task.completedAt ? formatDate(task.completedAt) : "ще не виконано"}</div>
+        <div class="details-item details-description"><strong>Опис:</strong> ${task.description || "опис не додано"}</div>
+      `;
+
+      detailsModal.classList.add("visible");
+    }
+
+    function closeDetailsModal() {
+      detailsModal.classList.remove("visible");
+      detailsContent.innerHTML = "";
+    }
+
+    function openModal(mode) {
+      taskModal.classList.add("visible");
+      modalTitle.textContent = mode === "edit" ? "Редагування завдання" : "Нове завдання";
+      submitBtn.textContent = mode === "edit" ? "Зберегти" : "Додати";
+      setTimeout(function() {
+        taskInput.focus();
+      }, 100);
+    }
+
+    function closeModal() {
+      taskModal.classList.remove("visible");
+      resetForm();
+    }
+
+    function resetForm() {
+      editingTaskId = null;
+      taskInput.value = "";
+      deadlineInput.value = "";
+      priorityInput.value = "Звичайна";
+      updatePriorityPreview();
+      categoryInput.value = "Побут";
+      descriptionInput.value = "";
+      modalTitle.textContent = "Нове завдання";
+      submitBtn.textContent = "Додати";
+    }
+
+    function addTask(text, deadline, priority, category, description) {
+      const newTask = {
+        id: Date.now(),
+        text: text,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        deadline: deadline || null,
+        priority: priority || "Звичайна",
+        category: category || "Побут",
+        description: description || "",
+        lastDeadlineLevel: deadline ? getDeadlineInfo(deadline).level : "no-deadline",
+        completedAt: null
+      };
+
+      tasks.push(newTask);
+      saveTasks();
+      renderTasks();
+      showToast("Завдання створено", text);
+    }
+
+    function updateTask(id, text, deadline, priority, category, description) {
+      tasks = tasks.map(function(task) {
+        if (task.id === id) {
+          return {
+            ...task,
+            text: text,
+            deadline: deadline || null,
+            priority: priority || "Звичайна",
+            category: category || "Побут",
+            description: description || "",
+            lastDeadlineLevel: deadline ? getDeadlineInfo(deadline).level : "no-deadline"
+          };
+        }
+        return task;
+      });
+
+      saveTasks();
+      renderTasks();
+      showToast("Завдання оновлено", text);
+    }
+
+    function completeTask(id) {
+      tasks = tasks.map(function(task) {
+        if (task.id === id) {
+          return {
+            ...task,
+            completed: true,
+            completedAt: new Date().toISOString()
+          };
+        }
+        return task;
+      });
+
+      saveTasks();
+      renderTasks();
+    }
+
+    function restoreTask(id) {
+      tasks = tasks.map(function(task) {
+        if (task.id === id) {
+          return {
+            ...task,
+            completed: false,
+            completedAt: null,
+            lastDeadlineLevel: task.deadline ? getDeadlineInfo(task.deadline).level : "no-deadline"
+          };
+        }
+        return task;
+      });
+
+      saveTasks();
+      renderTasks();
+    }
+
+    function startEditTask(id) {
+      const task = tasks.find(function(item) {
+        return item.id === id;
+      });
+
+      if (!task) return;
+
+      editingTaskId = id;
+      taskInput.value = task.text;
+      deadlineInput.value = task.deadline ? task.deadline.slice(0, 16) : "";
+      priorityInput.value = task.priority || "Звичайна";
+      updatePriorityPreview();
+      categoryInput.value = task.category || "Побут";
+      descriptionInput.value = task.description || "";
+      openModal("edit");
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(function(task) {
+        return task.id !== id;
+      });
+
+      saveTasks();
+      renderTasks();
+    }
+
+    function clearHistory() {
+      tasks = tasks.filter(function(task) {
+        return !task.completed;
+      });
+
+      saveTasks();
+      renderTasks();
+    }
+
+    openCreateModalBtn.onclick = function() {
+      resetForm();
+      openModal("create");
+    };
+
+    priorityInput.addEventListener("change", updatePriorityPreview);
+
+    taskForm.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const text = taskInput.value.trim();
+      const deadline = deadlineInput.value;
+      const priority = priorityInput.value;
+      const category = categoryInput.value;
+      const description = descriptionInput.value.trim();
+
+      if (text === "") {
+        alert("Будь ласка, введіть текст завдання:");
+        return;
+      }
+
+      if (editingTaskId === null) {
+        addTask(text, deadline, priority, category, description);
+      } else {
+        updateTask(editingTaskId, text, deadline, priority, category, description);
+      }
+
+      closeModal();
+    });
+
+    cancelEditBtn.onclick = function() {
+      closeModal();
+    };
+
+    taskModal.addEventListener("click", function(event) {
+      if (event.target === taskModal) {
+        closeModal();
+      }
+    });
+
+    detailsModal.addEventListener("click", function(event) {
+      if (event.target === detailsModal) {
+        closeDetailsModal();
+      }
+    });
+
+    filterModal.addEventListener("click", function(event) {
+      if (event.target === filterModal) {
+        filterModal.classList.remove("visible");
+      }
+    });
+
+    closeDetailsBtn.onclick = function() {
+      closeDetailsModal();
+    };
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape" && taskModal.classList.contains("visible")) {
+        closeModal();
+      }
+    });
+
+    activeTab.addEventListener("click", function() {
+      currentTab = "active";
+      activeTab.classList.add("active");
+      historyTab.classList.remove("active");
+      clearHistoryBtn.classList.remove("visible");
+      renderTasks();
+    });
+
+    historyTab.addEventListener("click", function() {
+      currentTab = "history";
+      historyTab.classList.add("active");
+      activeTab.classList.remove("active");
+      renderTasks();
+    });
+
+    categoryButtons.forEach(function(button) {
+      button.addEventListener("click", function() {
+        currentCategory = button.dataset.category;
+
+        categoryButtons.forEach(function(item) {
+          item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        renderTasks();
+      });
+    });
+
+    themeSelect.addEventListener("change", function() {
+      applyTheme(themeSelect.value);
+    });
+
+    clearHistoryBtn.onclick = function() {
+      clearHistory();
+    };
+
+    openFilterBtn.onclick = function() {
+      filterModal.classList.add("visible");
+    };
+
+    applyFilterBtn.onclick = function() {
+      filterModal.classList.remove("visible");
+      renderTasks();
+    };
+
+    resetFilterBtn.onclick = function() {
+      priorityFilter.value = "all";
+      deadlineFilter.value = "all";
+      filterModal.classList.remove("visible");
+      renderTasks();
+    };
+
+    loadTheme();
+    updatePriorityPreview();
+    checkDeadlineNotifications();
+    renderTasks();
+
+    setInterval(function() {
+      checkDeadlineNotifications();
+      renderTasks();
+    }, 60000);
+  </script>
+</body>
+</html>
